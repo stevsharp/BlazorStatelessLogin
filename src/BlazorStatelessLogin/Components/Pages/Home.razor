@@ -1,0 +1,36 @@
+﻿@page "/"
+@implements IDisposable
+@inject LoginSession Session
+
+<PageTitle>Home</PageTitle>
+
+<h1>Home</h1>
+
+@if (Session.IsAuthenticated)
+{
+    <p>Hello, <strong>@Session.CurrentUser</strong>.</p>
+    <p class="text-muted">Login machine state: <code>@Session.State</code></p>
+    <button class="btn btn-outline-secondary" @onclick="Logout">Logout</button>
+}
+else
+{
+    <p>You are not signed in.</p>
+    <p class="text-muted">Login machine state: <code>@Session.State</code></p>
+    <a class="btn btn-primary" href="login">Go to Login</a>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+    }
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private void Logout() => Session.Logout();
+
+    public void Dispose()
+    {
+        Session.Changed -= OnSessionChanged;
+    }
+}

@@ -1,0 +1,85 @@
+@page "/login"
+@implements IDisposable
+@inject LoginSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<h1>Login</h1>
+
+<p class="text-muted">Demo credentials: <code>admin</code> / <code>password</code> or <code>demo</code> / <code>demo</code></p>
+
+@if (Session.IsAuthenticated)
+{
+    <div class="alert alert-success">
+        Signed in as <strong>@Session.CurrentUser</strong> (state: @Session.State).
+    </div>
+    <button class="btn btn-outline-secondary" @onclick="Logout">Logout</button>
+}
+else
+{
+    <EditForm Model="_model" OnValidSubmit="HandleLogin">
+        <div class="mb-3">
+            <label class="form-label" for="username">Username</label>
+            <InputText id="username" class="form-control" @bind-Value="_model.Username" autocomplete="username" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="password">Password</label>
+            <InputText id="password" type="password" class="form-control" @bind-Value="_model.Password" autocomplete="current-password" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(Session.ErrorMessage))
+        {
+            <div class="alert alert-danger">@Session.ErrorMessage</div>
+        }
+
+        <p class="small text-muted">Machine state: <strong>@Session.State</strong></p>
+
+        <button type="submit" class="btn btn-primary" disabled="@_busy">Sign in</button>
+    </EditForm>
+}
+
+@code {
+    private readonly LoginFormModel _model = new();
+    private bool _busy;
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+    }
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private void HandleLogin()
+    {
+        _busy = true;
+        try
+        {
+            if (Session.TryLogin(_model.Username, _model.Password))
+            {
+                Navigation.NavigateTo("/");
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Logout()
+    {
+        Session.Logout();
+    }
+
+    public void Dispose()
+    {
+        Session.Changed -= OnSessionChanged;
+    }
+
+    private sealed class LoginFormModel
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

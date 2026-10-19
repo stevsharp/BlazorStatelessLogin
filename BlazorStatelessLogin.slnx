@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BlazorStatelessLogin.Domain/BlazorStatelessLogin.Domain.csproj" />
+    <Project Path="src/BlazorStatelessLogin/BlazorStatelessLogin.csproj" />
+  </Folder>
+</Solution>
