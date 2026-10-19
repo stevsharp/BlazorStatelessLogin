@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Local Claude Code guidance, not committed
+CLAUDE.md
+/.gitignore
+/README.md

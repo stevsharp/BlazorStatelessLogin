@@ -1,0 +1,21 @@
+@page "/admin"
+
+<PageTitle>Admin</PageTitle>
+
+<h1>Admin</h1>
+
+<AccessRule Role="@Roles.Admin">
+    <ChildContent>
+        <div class="alert alert-success">
+            This view is only rendered for users in the <code>@Roles.Admin</code> role.
+        </div>
+        <p>Put admin-only widgets here.</p>
+    </ChildContent>
+    <Denied>
+        <div class="alert alert-warning">
+            You need the <code>@Roles.Admin</code> role to see this page.
+            Try signing in as <code>admin</code> / <code>password</code>.
+        </div>
+        <a class="btn btn-primary" href="login">Go to Login</a>
+    </Denied>
+</AccessRule>

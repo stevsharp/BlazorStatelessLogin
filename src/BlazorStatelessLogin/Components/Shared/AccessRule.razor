@@ -1,0 +1,47 @@
+@inject LoginSession Session
+@implements IDisposable
+
+@*
+    Renders ChildContent only when the signed-in user passes the rule.
+    Combine Role and Rule freely; every one you set must pass.
+
+        <AccessRule Role="@Roles.Admin"> ...admin-only view... </AccessRule>
+
+        <AccessRule Rule="u => u.Username.StartsWith('d')">
+            <ChildContent>...</ChildContent>
+            <Denied><p>Not for you.</p></Denied>
+        </AccessRule>
+*@
+
+@if (Allowed)
+{
+    @ChildContent
+}
+else if (Denied is not null)
+{
+    @Denied
+}
+
+@code {
+    /// <summary>Required role, e.g. <c>Roles.Admin</c>. Optional.</summary>
+    [Parameter] public string? Role { get; set; }
+
+    /// <summary>Any custom predicate over the signed-in user. Optional.</summary>
+    [Parameter] public Func<AuthenticatedUser, bool>? Rule { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Shown when the rule fails. Omit to render nothing.</summary>
+    [Parameter] public RenderFragment? Denied { get; set; }
+
+    private bool Allowed =>
+        Session.IsAuthenticated
+        && (Role is null || Session.IsInRole(Role))
+        && (Rule is null || Session.Satisfies(Rule));
+
+    protected override void OnInitialized() => Session.Changed += OnSessionChanged;
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Session.Changed -= OnSessionChanged;
+}

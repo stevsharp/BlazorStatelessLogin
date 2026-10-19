@@ -2,80 +2,42 @@ using BlazorStatelessLogin.Domain.Login;
 
 namespace BlazorStatelessLogin.Services;
 
-public sealed class LoginSession
+/// <summary>
+/// Per-circuit holder for the login machine. It only forwards calls and raises <see cref="Changed"/>;
+/// the machine itself owns the flow and the resulting user / error state.
+/// </summary>
+public sealed class LoginSession(ICredentialValidator validator, ILogger<LoginStateMachine> logger)
 {
-    private static readonly Dictionary<string, string> DemoUsers = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["admin"] = "password",
-        ["demo"] = "demo"
-    };
-
-    private readonly LoginGuardContext _guards = new();
-    private readonly LoginStateMachine _machine;
-
-    public LoginSession()
-    {
-        _machine = new LoginStateMachine(LoginState.Anonymous, () => _guards);
-    }
+    private readonly LoginStateMachine _machine = new(LoginState.Anonymous, validator, logger);
 
     public LoginState State => _machine.State;
 
-    public string? CurrentUser { get; private set; }
+    public string? CurrentUser => _machine.CurrentUser;
 
-    public string? ErrorMessage { get; private set; }
+    public string? ErrorMessage => _machine.ErrorMessage;
 
-    public bool IsAuthenticated => State == LoginState.Authenticated;
+    public bool IsAuthenticated => _machine.IsAuthenticated;
+
+    public AuthenticatedUser? User => _machine.User;
+
+    public bool IsInRole(string role) => _machine.IsInRole(role);
+
+    public bool Satisfies(Func<AuthenticatedUser, bool> rule) => _machine.Satisfies(rule);
 
     public event Action? Changed;
 
     public bool TryLogin(string username, string password)
     {
-        ErrorMessage = null;
-        _guards.Username = username ?? string.Empty;
-        _guards.Password = password ?? string.Empty;
-
-        if (!_machine.CanFire(LoginTrigger.SubmitCredentials))
-        {
-            ErrorMessage = _machine.WhyCannotFire(LoginTrigger.SubmitCredentials);
-            Notify();
-            return false;
-        }
-
-        _machine.Fire(LoginTrigger.SubmitCredentials);
-
-        if (IsValidCredentials(_guards.Username, _guards.Password))
-        {
-            _machine.Fire(LoginTrigger.Succeed);
-            CurrentUser = _guards.Username.Trim();
-            ErrorMessage = null;
-            Notify();
-            return true;
-        }
-
-        _machine.Fire(LoginTrigger.Fail);
-        CurrentUser = null;
-        ErrorMessage = "Invalid username or password.";
+        var ok = _machine.Submit(username, password);
         Notify();
-        return false;
+        return ok;
     }
 
     public void Logout()
     {
-        if (_machine.CanFire(LoginTrigger.Logout))
-        {
-            _machine.Fire(LoginTrigger.Logout);
-        }
-
-        CurrentUser = null;
-        ErrorMessage = null;
-        _guards.Username = string.Empty;
-        _guards.Password = string.Empty;
+        _machine.Logout();
         Notify();
     }
-
-    private static bool IsValidCredentials(string username, string password) =>
-        DemoUsers.TryGetValue(username.Trim(), out var expected)
-        && string.Equals(expected, password, StringComparison.Ordinal);
 
     private void Notify() => Changed?.Invoke();
 }

@@ -1,4 +1,5 @@
 using BlazorStatelessLogin.Components;
+using BlazorStatelessLogin.Domain.Login;
 using BlazorStatelessLogin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddSingleton<ICredentialValidator, DemoCredentialValidator>();
 builder.Services.AddScoped<LoginSession>();
 
 var app = builder.Build();
